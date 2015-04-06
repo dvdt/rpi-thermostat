@@ -118,6 +118,12 @@ var SetpointClockGraphic = React.createClass({
     var arcScale = d3.scale.linear().domain([0,24]).range([Math.PI, 3*Math.PI]);
     var rScale = d3.scale.linear().domain([32, 100]).range([0, radius]);
     var axisScale = d3.scale.linear().domain([50, 100]).range([rScale(50), rScale(100)]);
+    var color = d3.scale.quantile()
+      .domain([32,50,60,65,70,75,80,90,100])
+      .range(["rgb(69,117,180)", "rgb(116,173,209)", "rgb(171,217,233)",
+              "rgb(224,243,248)", "rgb(254,224,144)", "rgb(253,174,97)", "rgb(244,109,67)",
+              "rgb(215,48,39)"]);
+
     var rAxis = d3.svg.axis().scale(axisScale)
       .tickValues([60, 80, 100])
       .orient('bottom');
@@ -127,17 +133,17 @@ var SetpointClockGraphic = React.createClass({
       .tickValues([50,55,65,70,75,85,90,95])
       .orient('bottom').tickFormat("");
 
-    var color = d3.scale.quantile()
-      .domain([32,50,60,65,70,75,80,90,100])
-      .range(["rgb(69,117,180)", "rgb(116,173,209)", "rgb(171,217,233)",
-              "rgb(224,243,248)", "rgb(254,224,144)", "rgb(253,174,97)", "rgb(244,109,67)",
-              "rgb(215,48,39)"]);
-
-    var arc = d3.svg.arc()
+    var tempArc = d3.svg.arc()
       .outerRadius(function(d) {return rScale(d.temp);})
       .innerRadius(rScale(50))
       .startAngle(function (d) {return arcScale(d.hr);})
       .endAngle(function (d) {return arcScale(d.hr+3);});
+
+    var hrArc = d3.svg.arc()
+                .outerRadius(radius+15)
+                .innerRadius(radius+15)
+                .startAngle(function (d) {return arcScale(d.hr);})
+                .endAngle(function (d) {return arcScale(d.hr);});
 
     var svg = d3.select(svgEl).select("g");
     var g = svg.selectAll(".arc")
@@ -146,8 +152,19 @@ var SetpointClockGraphic = React.createClass({
       .attr("class", "arc");
 
     g.append("path")
-        .attr("d", arc)
+        .attr("d", tempArc)
         .style("fill", function(d) { return color(+d.temp); });
+
+    g.append("text")
+          .attr("transform", function(d) {return "translate("+hrArc.centroid(d)+")";})
+          .attr("dy", ".35em")
+          .style("text-anchor", "middle")
+          .text(function(d) {
+            if (d.hr===12)
+              return '12 - noon'
+            if (d.hr===0)
+              return '0 - midnight';
+            return d.hr;});
 
     // Add the r-axis.
     svg.append("g")
