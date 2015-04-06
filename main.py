@@ -42,18 +42,19 @@ def get_setpoint(hour):
     setpoint_key = [set_hr for set_hr in TEMP_SETPOINT_HOURS if hour >= set_hr][-1]
     return ro_db[setpoint_key]
 
-def print_state():
-    print "gettung setpoint: %s" % get_setpoint(0)
-
 def parse_setpoints(json_form):
-    form = flask.json.loads(json_form)
+    form = flask.json.loads(json_form['setpoints'])
     setpoints = {}
 
     for setpoint, val in form.iteritems():
+        if isinstance(setpoint, basestring):
+            setpoint = int(setpoint)
+        if isinstance(val, basestring):
+            val = int(val)
         if setpoint in TEMP_SETPOINT_HOURS:
-            assert isinstance(val, int)
-            assert 0 <= val < 24
             setpoints[setpoint] = val
+        else:
+            raise Exception("setpoint %s not valid" % setpoint)
     return setpoints
 
 @app.route('/api/v1/setpoints/', methods=('POST', 'GET'))
@@ -61,6 +62,10 @@ def handle_setpoints_request():
     db = get_request_db()
     if request.method == 'POST':
         setpoints = parse_setpoints(request.form)
+        print setpoints
+        for hr, temp in setpoints.iteritems():
+            db[hr] = temp
+        return flask.json.jsonify(setpoints)
 
     if request.method == 'GET':
         setpoints = {hr: db.get(hr) for hr in TEMP_SETPOINT_HOURS}
@@ -76,8 +81,7 @@ def index():
 
 
 if __name__ == '__main__':
-    WRITE_DB = sqlite3dbm.sshelve.open(SETPOINT_DB)
     scheduler = BackgroundScheduler()
-    scheduler.add_job(print_state, 'interval', seconds=3)
+    # scheduler.add_job(print_state, 'interval', seconds=3)
     # scheduler.start()
     app.run(debug=True)

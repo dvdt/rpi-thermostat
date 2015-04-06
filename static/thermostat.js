@@ -1,12 +1,40 @@
 var Root = React.createClass({
   getInitialState: function() {
     var setpoints = {"0": 75, "3": 75, "6": 75, "9": 75, "12": 75, "15": 75, "18": 75, "21": 75};
-    return {"setpoints": setpoints};
+    return {"setpoints": setpoints,
+            "altered": false};
+  },
+
+  componentDidMount: function() {
+    $.ajax("/api/v1/setpoints/", {
+      type: "GET",
+      success: function(data, status, req) {
+        console.log(data);
+        this.state.altered = false
+        this.state.setpoints = data;
+        this.setState(this.state);
+      }.bind(this),
+      error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
+    });
   },
   handleSetpointChange: function(hour, newSetpoint) {
-    console.log(hour + ": " + newSetpoint);
     this.state.setpoints[hour] = newSetpoint;
+    this.state.altered = true;
     this.setState(this.state);
+  },
+  /**
+  * Sends ajax request to server to change temp setpoints
+  */
+  setSetpoints: function() {
+    $.ajax("/api/v1/setpoints/", {
+      type: "POST",
+      data: {"setpoints": JSON.stringify(this.state.setpoints)},
+      success: function(data, status, req) {
+        this.state.altered = false;
+        this.setState(this.state);
+      }.bind(this),
+      error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
+    });
   },
   render: function() {
     return (
@@ -15,7 +43,7 @@ var Root = React.createClass({
       <div className="col-md-4">
         <div className="row">
           <div className="col-md-12" style={{padding: "10px"}}>
-            <SubmitSetpoints />
+            <SubmitSetpoints altered={this.state.altered} handleClick={this.setSetpoints} />
           </div>
         </div>
         <div className="row">
@@ -37,11 +65,20 @@ var Root = React.createClass({
 
 var SubmitSetpoints = React.createClass({
   render: function() {
+    if (this.props.altered) {
     return (
-    <button className="btn center-block">
+    <button className="btn btn-warning center-block" onClick={this.props.handleClick}>
       Set thermostat
     </button>
     );
+    } else {
+    return (
+      <button className="btn btn-info center-block" disabled="disabled">
+      Set thermostat
+    </button>
+    );
+    }
+
   }
 });
 
@@ -74,7 +111,6 @@ var TempSetpoints = React.createClass({
         {this.getLabelledSlider("21", "9pm - midnight")}
       </div>
     );
-
   }
 });
 
@@ -95,7 +131,6 @@ var SetpointClockGraphic = React.createClass({
     for (var hr in setpoints) {
       if (setpoints.hasOwnProperty(hr)) {
         data.push({"hr": +hr, "temp": setpoints[hr]});
-        console.log(hr + " -> " + setpoints[hr]);
       }
     }
     return data;
@@ -154,7 +189,13 @@ var SetpointClockGraphic = React.createClass({
     g.append("path")
         .attr("d", tempArc)
         .style("fill", function(d) { return color(+d.temp); });
-
+    g.append("text")
+        .attr("transform", function(d) {return "translate("+tempArc.centroid(d)+")"})
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text(function(d) {
+          return d.temp + 'F';
+        });
     g.append("text")
           .attr("transform", function(d) {return "translate("+hrArc.centroid(d)+")";})
           .attr("dy", ".35em")
@@ -181,7 +222,6 @@ var SetpointClockGraphic = React.createClass({
     svg.append("g")
         .attr("class", "x axis")
         .call(rMinorAxis.orient("bottom").scale(axisScale.copy().range([-rScale(50), -rScale(100)])));
-
   },
 
   componentDidMount: function() {
@@ -194,12 +234,6 @@ var SetpointClockGraphic = React.createClass({
     var el = React.findDOMNode(this);
     this.createClock(el);
     this.updateClock(el, this.toArcData(this.props.setpoints));
-
-  },
-
-  componentWillUnmount: function() {
-    var el = React.findDOMNode(this);
-
   },
 
   render: function() {
