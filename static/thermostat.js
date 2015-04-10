@@ -56,7 +56,14 @@ var Root = React.createClass({
 
   render: function() {
     return (
+    <div>
     <div className="row">
+      <div className="col-md-offset-2 col-md-10">
+        <div className="center-block"><h3>Turn AC on for:</h3></div>
+      </div>
+    </div>
+    <div className="row">
+
       <div className="col-md-offset-2 col-md-10">
         <ManualTimer handleManual={this.setManual} />
       </div>
@@ -69,7 +76,7 @@ var Root = React.createClass({
         </div>
       </div>
     </div>
-
+    </div>
     );
   }
 });
@@ -77,21 +84,20 @@ var Root = React.createClass({
 var ManualTimer = React.createClass({
   handleClick: function(e) {
     console.log(e);
-
     var val = e.target.value;
     this.props.handleManual(val);
   },
   render: function() {
     return (
     <div className="row">
-      <div className="col-md-4">
-        <button className="btn" value={30*60} onClick={this.handleClick}>30 min ($0.10)</button>
+      <div className="col-xs-4">
+        <button className="btn btn-primary" value={30*60} onClick={this.handleClick}>30 min ($0.10)</button>
       </div>
-      <div className="col-md-4">
-        <button className="btn" value={60*60} onClick={this.handleClick}>1 hr ($0.20)</button>
+      <div className="col-xs-4">
+        <button className="btn btn-success" value={60*60} onClick={this.handleClick}>1 hr ($0.20)</button>
       </div>
-      <div className="col-md-4">
-        <button className="btn" value={120*60} onClick={this.handleClick}>2 hr ($0.40)</button>
+      <div className="col-xs-4">
+        <button className="btn btn-warning" value={120*60} onClick={this.handleClick}>2 hr ($0.40)</button>
       </div>
     </div>
     );

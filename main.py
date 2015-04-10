@@ -9,6 +9,7 @@ import flask.json
 from flask import request
 import logging
 import time
+import os
 import rpi_relay
 import state
 import Queue
@@ -121,16 +122,17 @@ def event_handler():
 
 @app.route('/<path:path>/')
 def resources(path):
-    return flask.send_from_directory('static', path)
+    return flask.send_from_directory(STATIC_DIR, path)
 
 @app.route('/')
 def index():
     return flask.send_file('static/index.html')
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(asctime)s %(message)s')
     logger = logging.getLogger('main')
 
+    STATIC_DIR = os.environ['STATIC_DIR']
     rpi_relay.init_RPi()
     scheduler = BackgroundScheduler()
     scheduler.start()

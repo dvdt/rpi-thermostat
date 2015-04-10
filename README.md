@@ -7,9 +7,21 @@ Install
 virtualenv venv
 source ./venv/bin/activate
 pip install -r requirements.txt
+sudo cp rpi-thermostat.conf /etc/supervisor/conf.d/
 ```
 
-Run
+Deploy
+---
+```
+./deploy
+# in rpi
+sudo supervisorctl reread
+sudo supervisorctl update
+
+# should be running now!
+```
+
+Run locally
 ---
 ```
 python main.py
