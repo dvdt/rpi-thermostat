@@ -6,13 +6,14 @@ var Root = React.createClass({
   },
 
   componentDidMount: function() {
-    $.ajax("/api/v1/setpoints/", {
+    $.ajax("/api/v1/timer/", {
       type: "GET",
       success: function(data, status, req) {
         console.log(data);
-        this.state.altered = false
-        this.state.setpoints = data;
-        this.setState(this.state);
+//        this.state.altered = false
+//        this.state.setpoints = data;
+
+        this.setState(data);
       }.bind(this),
       error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
     });
@@ -36,44 +37,77 @@ var Root = React.createClass({
       error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
     });
   },
+
+  setManualState: function(data) {
+    if (data.future_sec) {
+      this.setState(data);
+    }
+  },
+  setManual: function(on_time) {
+    $.ajax("/api/v1/timer/", {
+      type: "POST",
+      data: {"on_time": on_time},
+      success: function(data, status, req) {
+        this.setManualState(data);
+      }.bind(this),
+      error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
+    });
+  },
+
   render: function() {
     return (
     <div className="row">
+      <div className="col-md-offset-2 col-md-10">
+        <ManualTimer handleManual={this.setManual} />
+      </div>
+
       <div className="col-md-2"></div>
-      <div className="col-md-4">
-        <div className="row">
-          <div className="col-md-12" style={{padding: "10px"}}>
-            <SubmitSetpoints altered={this.state.altered} handleClick={this.setSetpoints} />
-          </div>
-        </div>
-        <div className="row">
-          <div className="col-md-12">
-            <div className="center-block">
-              <SetpointClockGraphic height="300" width="300" setpoints={this.state.setpoints} />
-            </div>
-          </div>
+
+      <div className="row">
+        <div className="col-md-6 center-block">
+          <p>{this.state.future_sec ? (this.state.future_status ? "turning on in " : "turning off in ") + parseInt(this.state.future_sec / 60) + " minutes" : null}</p>
         </div>
       </div>
-      <div className="col-md-4">
-        <TempSetpoints setpoints={this.state.setpoints} handleSetpointChange={this.handleSetpointChange} />
-      </div>
-      <div className="col-md-2"></div>
     </div>
+
     );
   }
 });
 
+var ManualTimer = React.createClass({
+  handleClick: function(e) {
+    console.log(e);
+
+    var val = e.target.value;
+    this.props.handleManual(val);
+  },
+  render: function() {
+    return (
+    <div className="row">
+      <div className="col-md-4">
+        <button className="btn" value={30*60} onClick={this.handleClick}>30 min ($0.10)</button>
+      </div>
+      <div className="col-md-4">
+        <button className="btn" value={60*60} onClick={this.handleClick}>1 hr ($0.20)</button>
+      </div>
+      <div className="col-md-4">
+        <button className="btn" value={120*60} onClick={this.handleClick}>2 hr ($0.40)</button>
+      </div>
+    </div>
+    );
+  }
+});
 var SubmitSetpoints = React.createClass({
   render: function() {
     if (this.props.altered) {
     return (
-    <button className="btn btn-warning center-block" onClick={this.props.handleClick}>
+    <button id="submit-temps" className="btn btn-warning center-block" onClick={this.props.handleClick}>
       Set thermostat
     </button>
     );
     } else {
     return (
-      <button className="btn btn-info center-block" disabled="disabled">
+      <button id="submit-temps" className="btn btn-info center-block" disabled="disabled">
       Set thermostat
     </button>
     );

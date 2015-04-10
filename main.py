@@ -7,17 +7,19 @@ for safety reasons.
 import flask
 import flask.json
 from flask import request
-import sqlite3dbm
-import threading
+import logging
 from datetime import datetime
 import time
 import os
+import rpi_relay
+import state
+import Queue
+import werkzeug.exceptions
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
 app = flask.Flask(__name__)
 
-SETPOINT_DB = 'temp_setpoints.sqlite3'
 
 # Temperature setpoint is determined by the time of day, stored in SETPOINT_DB.
 TEMP_SETPOINT_HOURS = (0, 3, 6, 9, 12, 15, 18, 21)
@@ -27,7 +29,7 @@ def get_request_db():
     db = getattr(flask.g, '_database', None)
     if db is None:
         # open a new connection as needed -- throughput doesn't need to be high for this!
-        db = flask.g._database = sqlite3dbm.sshelve.open(SETPOINT_DB)
+        db = flask.g._database = state.get_ro_conn()
     return db
 
 @app.teardown_appcontext
@@ -38,7 +40,7 @@ def close_connection(exception):
 
 def get_setpoint(hour):
     "Returns the temp setpoint for the given hour of day"
-    ro_db = sqlite3dbm.sshelve.open(SETPOINT_DB, flag='r')
+    ro_db = get_request_db()
     setpoint_key = [set_hr for set_hr in TEMP_SETPOINT_HOURS if hour >= set_hr][-1]
     return ro_db[setpoint_key]
 
@@ -71,6 +73,54 @@ def handle_setpoints_request():
         setpoints = {hr: db.get(hr) for hr in TEMP_SETPOINT_HOURS}
         return flask.json.jsonify(setpoints)
 
+@app.route('/api/v1/timer/', methods=('POST', 'GET'))
+def handle_timer_request():
+    'manual override for turning the AC on for a set amount of time.'
+    def get_manual_status():
+        if state.EVENT_QUEUE.queue:
+            now = time.time()
+            future_events = filter(lambda x: x[0] > now, state.EVENT_QUEUE.queue)
+            if future_events:
+                future_e, status = future_events[0]
+                return flask.json.jsonify(dict(future_sec=(future_e - now), future_status=status))
+
+        return flask.json.jsonify({})
+
+    def handle_timer(on_time):
+        if (on_time < rpi_relay.MIN_ON_TIME) or (on_time > rpi_relay.MAX_ON_TIME):
+            raise werkzeug.exceptions.BadRequest(description='time_on exceeds valid params')
+        turn_off_event = (time.time() + on_time, False)
+        turn_on_event = (time.time(), True)
+        new_queue = Queue.PriorityQueue()
+        new_queue.put(turn_on_event)
+        new_queue.put(turn_off_event)
+        state.EVENT_QUEUE = new_queue
+
+    if request.method == 'POST':
+        on_time_int = int(request.form['on_time'])
+        handle_timer(on_time_int)
+        return get_manual_status()
+
+    if request.method == 'GET':
+        return get_manual_status()
+
+def event_handler():
+    logger = logging.getLogger('task_queue')
+    q = state.EVENT_QUEUE
+    conn = state.get_conn()
+    try:
+        exec_time, event = q.get(block=False)
+        now = time.time()
+        if now > exec_time:
+            rpi_relay.set_ac_relay(event, conn)
+            logger.info("setting relay=%s" % event)
+        else:
+            # put the event back into the queue if it isn't time to execute it yet
+            q.put((exec_time, event))
+        q.task_done()
+    except Queue.Empty:
+        pass
+
 @app.route('/<path:path>/')
 def resources(path):
     return flask.send_from_directory('static', path)
@@ -79,9 +129,13 @@ def resources(path):
 def index():
     return flask.send_file('static/index.html')
 
-
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+    logger = logging.getLogger('main')
     scheduler = BackgroundScheduler()
-    # scheduler.add_job(print_state, 'interval', seconds=3)
-    # scheduler.start()
-    app.run(debug=True)
+    scheduler.start()
+
+    scheduler.add_job(event_handler, 'interval', seconds=5)
+    logger.info('starting scheduler')
+    logger.info('starting web server')
+    app.run(debug=False, host='0.0.0.0')
