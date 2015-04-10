@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rm  db.sqlite3
+rm -r *pyc
+rsync -av --exclude='venv' --exclude='.git' --exclude='.idea' . pi@192.168.1.214:~/rpi-thermostat
+# ssh pi@192.168.1.214 'cd ~/rpi-thermostat && source venv/bin/activate && pip install -r requirements.txt'
+
+echo "deployment complete. please manually restart server process on rpi"

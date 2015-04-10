@@ -8,9 +8,7 @@ import flask
 import flask.json
 from flask import request
 import logging
-from datetime import datetime
 import time
-import os
 import rpi_relay
 import state
 import Queue
@@ -130,8 +128,10 @@ def index():
     return flask.send_file('static/index.html')
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(message)s')
     logger = logging.getLogger('main')
+
+    rpi_relay.init_RPi()
     scheduler = BackgroundScheduler()
     scheduler.start()
 
