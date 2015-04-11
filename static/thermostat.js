@@ -57,14 +57,15 @@ var Root = React.createClass({
   render: function() {
     return (
     <div>
+    <h3 align="center">№ 5 @ 3262 W Main</h3>
+
     <div className="row">
-      <div className="col-md-offset-2 col-md-10">
+      <div className="col-md-12">
         <div className="center-block"><h3>Turn AC on for:</h3></div>
       </div>
     </div>
     <div className="row">
-
-      <div className="col-md-offset-2 col-md-10">
+      <div className="col-md-4">
         <ManualTimer handleManual={this.setManual} />
       </div>
 
@@ -72,7 +73,7 @@ var Root = React.createClass({
 
       <div className="row">
         <div className="col-md-6 center-block">
-          <p>{this.state.future_sec ? (this.state.future_status ? "turning on in " : "turning off in ") + parseInt(this.state.future_sec / 60) + " minutes" : null}</p>
+          <p><b>{this.state.future_sec ? (this.state.future_status ? "turning on in " : "turning off in ") + parseInt(this.state.future_sec / 60) + " minutes" : null}</b></p>
         </div>
       </div>
     </div>
@@ -89,16 +90,10 @@ var ManualTimer = React.createClass({
   },
   render: function() {
     return (
-    <div className="row">
-      <div className="col-md-3 manual-override">
-        <button className="btn btn-primary" value={30*60} onClick={this.handleClick}>30 min ($0.10)</button>
-      </div>
-      <div className="col-md-offset-1 col-md-3 manual-override">
-        <button className="btn btn-success" value={60*60} onClick={this.handleClick}>1 hr ($0.20)</button>
-      </div>
-      <div className="col-md-offset-1 col-md-3 manual-override">
-        <button className="btn btn-warning" value={120*60} onClick={this.handleClick}>2 hr ($0.40)</button>
-      </div>
+    <div className="manual-override">
+        <button type="button" className="btn btn-lg btn-primary btn-block" value={30*60} onClick={this.handleClick}>30 min ($0.10)</button>
+        <button type="button" className="btn btn-lg btn-success btn-block" value={60*60} onClick={this.handleClick}>1 hr ($0.20)</button>
+        <button type="button" className="btn btn-lg btn-warning btn-block" value={120*60} onClick={this.handleClick}>2 hr ($0.40)</button>
     </div>
     );
   }
