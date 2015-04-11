@@ -13,3 +13,6 @@
   shape-rendering: crispEdges;
 }
 
+.manual-override {
+  padding: 15px;
+}

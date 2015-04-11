@@ -90,13 +90,13 @@ var ManualTimer = React.createClass({
   render: function() {
     return (
     <div className="row">
-      <div className="col-xs-4">
+      <div className="col-md-3 manual-override">
         <button className="btn btn-primary" value={30*60} onClick={this.handleClick}>30 min ($0.10)</button>
       </div>
-      <div className="col-xs-4">
+      <div className="col-md-offset-1 col-md-3 manual-override">
         <button className="btn btn-success" value={60*60} onClick={this.handleClick}>1 hr ($0.20)</button>
       </div>
-      <div className="col-xs-4">
+      <div className="col-md-offset-1 col-md-3 manual-override">
         <button className="btn btn-warning" value={120*60} onClick={this.handleClick}>2 hr ($0.40)</button>
       </div>
     </div>

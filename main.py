@@ -132,7 +132,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(asctime)s %(message)s')
     logger = logging.getLogger('main')
 
-    STATIC_DIR = os.environ['STATIC_DIR']
+    STATIC_DIR = os.environ.get('STATIC_DIR', 'static')
     rpi_relay.init_RPi()
     scheduler = BackgroundScheduler()
     scheduler.start()
