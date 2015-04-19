@@ -6,8 +6,16 @@ rsync -av --exclude='venv' --exclude='.git' --exclude='.idea' . pi@192.168.1.214
 rsync -av --exclude='venv' --exclude='.git' --exclude='.idea' . pi@192.168.1.216:~/rpi-thermostat
 
 # ssh pi@192.168.1.214 'cd ~/rpi-thermostat && source venv/bin/activate && pip install -r requirements.txt'
+# ssh pi@192.168.1.216 'cd ~/rpi-thermostat && source venv/bin/activate && pip install -r requirements.txt'
+
+ssh pi@192.168.1.214  'sudo cp /home/pi/rpi-thermostat/rpi-thermostat.conf /etc/supervisor/conf.d/'
+ssh pi@192.168.1.214 'sudo supervisorctl reload'
 ssh pi@192.168.1.214 'sudo supervisorctl restart thermostat'
 
-echo "deployment complete. please manually restart server process on rpi"
-echo "for example: sudo supervisorctl reread"
-echo "sudo supervisorctl restart thermostat"
+ssh pi@192.168.1.216  'sudo cp /home/pi/rpi-thermostat/temp_logger.conf /etc/supervisor/conf.d/'
+ssh pi@192.168.1.216 'sudo supervisorctl reload'
+ssh pi@192.168.1.216 'sudo supervisorctl restart temp_logger'
+
+# echo "deployment complete. please manually restart server process on rpi"
+# echo "for example: sudo supervisorctl reread"
+# echo "sudo supervisorctl restart thermostat"
