@@ -3,6 +3,11 @@
 rm  db.sqlite3
 rm -r *pyc
 rsync -av --exclude='venv' --exclude='.git' --exclude='.idea' . pi@192.168.1.214:~/rpi-thermostat
+rsync -av --exclude='venv' --exclude='.git' --exclude='.idea' . pi@192.168.1.216:~/rpi-thermostat
+
 # ssh pi@192.168.1.214 'cd ~/rpi-thermostat && source venv/bin/activate && pip install -r requirements.txt'
+ssh pi@192.168.1.214 'sudo supervisorctl restart thermostat'
 
 echo "deployment complete. please manually restart server process on rpi"
+echo "for example: sudo supervisorctl reread"
+echo "sudo supervisorctl restart thermostat"

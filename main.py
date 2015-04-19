@@ -3,6 +3,7 @@ throughout a 24hr day: 0-3, 3-6, 6-9, etc. Additionally, the user may override t
 Includes built-in hysteresis to avoid rapid on-off switching of HVAC systems; this hysteresis is not exposed in the API
 for safety reasons.
 """
+import collections
 
 import flask
 import flask.json
@@ -72,6 +73,23 @@ def handle_setpoints_request():
         setpoints = {hr: db.get(hr) for hr in TEMP_SETPOINT_HOURS}
         return flask.json.jsonify(setpoints)
 
+@app.route('/api/v1/temperature/', methods=('POST', 'GET'))
+def handle_temp():
+    logger.info('in temperature')
+    if request.method == 'POST':
+        logger.warn(request.form)
+        temp = request.form.get('temperature')
+        humidity = request.form.get('humidity')
+        logger.warn('temp=%s, humidity=%s' % (temp, humidity))
+        now = time.time()
+        state.TEMPERATURE_READINGS.append((now, temp))
+        state.HUMIDITY_READINGS.append((now, humidity))
+        return 'ok'
+    if request.method == 'GET':
+        temperatures = [x for x in state.TEMPERATURE_READINGS]
+        humidities = [x for x in state.HUMIDITY_READINGS]
+        return flask.json.jsonify(dict(temperature=temperatures, humidity=humidities))
+
 @app.route('/api/v1/timer/', methods=('POST', 'GET'))
 def handle_timer_request():
     'manual override for turning the AC on for a set amount of time.'
@@ -138,6 +156,6 @@ if __name__ == '__main__':
     scheduler.start()
 
     scheduler.add_job(event_handler, 'interval', seconds=5)
-    logger.info('starting scheduler')
-    logger.info('starting web server')
+    logger.warn('starting scheduler')
+    logger.warn('starting web server')
     app.run(debug=False, host='0.0.0.0')

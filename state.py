@@ -1,8 +1,11 @@
+import collections
 import sqlite3dbm
 import Queue
 SETPOINT_DB = 'temp_setpoints.sqlite3'
 
 EVENT_QUEUE = Queue.PriorityQueue()
+TEMPERATURE_READINGS = collections.deque(maxlen=7 * 24 * 60)
+HUMIDITY_READINGS = collections.deque(maxlen=7 * 24 * 60)
 OVERRIDE_KEY = 'override'
 # accesses the unix epoch for when the AC relay was last switched OFF
 MOST_RECENT_OFF_KEY = 'most_recent_off'
