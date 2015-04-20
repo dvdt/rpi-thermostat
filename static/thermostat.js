@@ -53,12 +53,37 @@ var Root = React.createClass({
       error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
     });
   },
-
-  render: function() {
+  setpointControls: function () {
     return (
     <div>
-    <h3 align="center">№ 5 @ 3262 W Main</h3>
+    <div className="row">
+      <div className="col-md-2"></div>
+      <div className="col-md-4">
+        <div className="row">
+          <div className="col-md-12" style={{padding: "10px"}}>
+            <SubmitSetpoints altered={this.state.altered} handleClick={this.setSetpoints} />
+          </div>
+        </div>
+        <div className="row">
+          <div className="col-md-12">
+            <div className="center-block">
+              <SetpointClockGraphic height="300" width="300" setpoints={this.state.setpoints} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="col-md-4">
+        <TempSetpoints setpoints={this.state.setpoints} handleSetpointChange={this.handleSetpointChange} />
+      </div>
+      <div className="col-md-2"></div>
+    </div>
+    </div>
+    )
+  },
 
+  manualControls: function() {
+    return (
+    <div>
     <div className="row">
       <div className="col-md-12">
         <div className="center-block"><h3>Turn AC on for:</h3></div>
@@ -77,6 +102,15 @@ var Root = React.createClass({
         </div>
       </div>
     </div>
+    </div>
+    );
+  },
+  render: function() {
+    return (
+    <div>
+    <h3 align="center">№ 5 @ 3262 W Main</h3>
+    {this.setpointControls()}
+
     </div>
     );
   }

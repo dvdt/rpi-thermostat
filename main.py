@@ -4,6 +4,8 @@ Includes built-in hysteresis to avoid rapid on-off switching of HVAC systems; th
 for safety reasons.
 """
 import collections
+import datetime
+import conf
 
 import flask
 import flask.json
@@ -29,7 +31,7 @@ def get_request_db():
     db = getattr(flask.g, '_database', None)
     if db is None:
         # open a new connection as needed -- throughput doesn't need to be high for this!
-        db = flask.g._database = state.get_ro_conn()
+        db = flask.g._database = state.get_conn()
     return db
 
 @app.teardown_appcontext
@@ -38,11 +40,15 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-def get_setpoint(hour):
+def to_farenheit(c):
+    return 9.0/5.0 * c + 32
+
+def get_setpoint(hour, db=None):
     "Returns the temp setpoint for the given hour of day"
-    ro_db = get_request_db()
+    if db is None:
+        db = get_request_db()
     setpoint_key = [set_hr for set_hr in TEMP_SETPOINT_HOURS if hour >= set_hr][-1]
-    return ro_db[setpoint_key]
+    return db[setpoint_key]
 
 def parse_setpoints(json_form):
     form = flask.json.loads(json_form['setpoints'])
@@ -52,7 +58,7 @@ def parse_setpoints(json_form):
         if isinstance(setpoint, basestring):
             setpoint = int(setpoint)
         if isinstance(val, basestring):
-            val = int(val)
+            val = float(val)
         if setpoint in TEMP_SETPOINT_HOURS:
             setpoints[setpoint] = val
         else:
@@ -64,7 +70,6 @@ def handle_setpoints_request():
     db = get_request_db()
     if request.method == 'POST':
         setpoints = parse_setpoints(request.form)
-        print setpoints
         for hr, temp in setpoints.iteritems():
             db[hr] = temp
         return flask.json.jsonify(setpoints)
@@ -78,8 +83,10 @@ def handle_temp():
     logger.info('in temperature')
     if request.method == 'POST':
         logger.warn(request.form)
-        temp = request.form.get('temperature')
-        humidity = request.form.get('humidity')
+        temp = float(request.form.get('temperature'))
+        if conf.FARENHEIT is True:
+            temp = to_farenheit(temp)
+        humidity = float(request.form.get('humidity'))
         logger.warn('temp=%s, humidity=%s' % (temp, humidity))
         now = time.time()
         state.TEMPERATURE_READINGS.append((now, temp))
@@ -138,6 +145,43 @@ def event_handler():
     except Queue.Empty:
         pass
 
+def bangbang_controller():
+    def is_stale(timestamp):
+        if time.time() - int(timestamp) > state.STALE_READ_INTERVAL:
+            return True
+        return False
+
+    logger = logging.getLogger('bangbang_controller')
+
+    conn = state.get_conn()
+    temp_read_time, most_recent_temp = state.TEMPERATURE_READINGS[-1]
+    humid_read_time, most_recent_humidity = state.HUMIDITY_READINGS[-1]
+
+    if is_stale(temp_read_time) or is_stale(humid_read_time):
+        state.CURRENT_MODE = state.ThermostatModes.MANUAL
+        logger.error("temperature readings are stale! setting mode to MANUAL")
+        return
+
+    now = datetime.datetime.now()
+    current_setpoint = get_setpoint(now.hour, db=conn)
+
+    if state.CURRENT_MODE == state.ThermostatModes.AUTO:
+        if (most_recent_temp - current_setpoint) > (conf.HYSTERESIS_TEMP / 2.0):
+            turn_on_event = (time.time(), True)
+            state.EVENT_QUEUE.put(turn_on_event)
+            if rpi_relay.ac_status() is False:
+                logger.warn('Temp=%s, setpoint=%s, Setting AC ON' % (most_recent_temp, current_setpoint))
+        elif (current_setpoint - most_recent_temp) > (conf.HYSTERESIS_TEMP / 2.0):
+            turn_off_event = (time.time(), False)
+            state.EVENT_QUEUE.put(turn_off_event)
+            if rpi_relay.ac_status() is True:
+                logger.warn('Temp=%s, setpoint=%s, Setting AC OFF' % (most_recent_temp, current_setpoint))
+    else:
+        logger.warn('temperature controller is OFF. set mode to AUTO to turn on')
+
+
+
+
 @app.route('/<path:path>/')
 def resources(path):
     return flask.send_from_directory(STATIC_DIR, path)
@@ -156,6 +200,7 @@ if __name__ == '__main__':
     scheduler.start()
 
     scheduler.add_job(event_handler, 'interval', seconds=5)
+    scheduler.add_job(bangbang_controller, 'interval', seconds=120)
     logger.warn('starting scheduler')
     logger.warn('starting web server')
     app.run(debug=False, host='0.0.0.0')
