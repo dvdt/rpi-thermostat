@@ -179,9 +179,6 @@ def bangbang_controller():
     else:
         logger.warn('temperature controller is OFF. set mode to AUTO to turn on')
 
-
-
-
 @app.route('/<path:path>/')
 def resources(path):
     return flask.send_from_directory(STATIC_DIR, path)

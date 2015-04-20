@@ -6,14 +6,14 @@ var Root = React.createClass({
   },
 
   componentDidMount: function() {
-    $.ajax("/api/v1/timer/", {
+    $.ajax("/api/v1/setpoints/", {
       type: "GET",
       success: function(data, status, req) {
         console.log(data);
-//        this.state.altered = false
-//        this.state.setpoints = data;
+        this.state.altered = false
+        this.state.setpoints = data;
 
-        this.setState(data);
+        this.setState(this.state);
       }.bind(this),
       error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
     });
