@@ -16,8 +16,8 @@ def get_conn():
 STALE_READ_INTERVAL = 5 * 60 # in seconds
 
 EVENT_QUEUE = Queue.PriorityQueue()
-TEMPERATURE_READINGS = collections.deque(maxlen=7 * 24 * 60)
-HUMIDITY_READINGS = collections.deque(maxlen=7 * 24 * 60)
+TEMPERATURE_READINGS = collections.deque(maxlen=1 * 24 * 60)
+HUMIDITY_READINGS = collections.deque(maxlen=1 * 24 * 60)
 # accesses the unix epoch for when the AC relay was last switched OFF
 MOST_RECENT_OFF_KEY = 'most_recent_off'
 

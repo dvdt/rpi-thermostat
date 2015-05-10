@@ -65,12 +65,18 @@ var Root = React.createClass({
           </div>
         </div>
         <div className="row">
+          <div className="col-md-12" style={{padding: "10px"}}>
+            <CurrentTemp />
+          </div>
+        </div>
+        <div className="row">
           <div className="col-md-12">
             <div className="center-block">
               <SetpointClockGraphic height="300" width="300" setpoints={this.state.setpoints} />
             </div>
           </div>
         </div>
+
       </div>
       <div className="col-md-4">
         <TempSetpoints setpoints={this.state.setpoints} handleSetpointChange={this.handleSetpointChange} />
@@ -193,6 +199,34 @@ var TempSetpointSlider = React.createClass({
                     max={this.props.max}  value={this.props.value} onChange={this.handleSetpoint}/>
     )
   }});
+
+var CurrentTemp = React.createClass({
+  getInitialState: function() {
+    return {mostRecentTempDatetime: "asdf", mostRecentTemp: 32.23412, mostRecentRH: 58.7999992371};
+  },
+  componentDidMount: function() {
+    $.ajax("/api/v1/temperature/", {
+      type: "GET",
+      success: function(data, status, req) {
+        console.log(data);
+        var mostRecentTempDate = new Date(data.temperature[data.temperature.length - 1][0] * 1000);
+        var mostRecentTemp = data.temperature[data.temperature.length - 1][1];
+        var mostRecentRH = data.humidity[data.humidity.length - 1][1];
+        this.setState({mostRecentTempDatetime: mostRecentTempDate.toString(),
+                      mostRecentTemp: mostRecentTemp,
+                      mostRecentRH: mostRecentRH});
+      }.bind(this),
+      error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
+    });
+  },
+  render: function() {
+  return (
+  <div className="center-block">
+    <button id="temp-display" className="btn btn-lg btn-primary center-block" disabled="disabled">{this.state.mostRecentTemp.toFixed(1)}°F - {this.state.mostRecentRH.toFixed(1)}%RH</button>
+  </div>
+  );
+  }
+});
 
 var SetpointClockGraphic = React.createClass({
   toArcData: function(setpoints) {

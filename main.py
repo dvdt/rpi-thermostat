@@ -196,7 +196,7 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler()
     scheduler.start()
 
-    scheduler.add_job(event_handler, 'interval', seconds=5)
+    scheduler.add_job(event_handler, 'interval', seconds=60)
     scheduler.add_job(bangbang_controller, 'interval', seconds=120)
     logger.warn('starting scheduler')
     logger.warn('starting web server')

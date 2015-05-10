@@ -2,7 +2,7 @@
 AC_RELAY_PIN = 12
 
 # Temperature may drift +/- (HYSTERESIS_TEMP / 2) before changing AC state.
-HYSTERESIS_TEMP = 5 # celsius
+HYSTERESIS_TEMP = 3.0
 
 # These parameters prevent rapid on/off cycling of the AC unit.
 MIN_OFF_TIME = 5 * 60 # in seconds
