@@ -2,7 +2,8 @@ var Root = React.createClass({
   getInitialState: function() {
     var setpoints = {"0": 75, "3": 75, "6": 75, "9": 75, "12": 75, "15": 75, "18": 75, "21": 75};
     return {"setpoints": setpoints,
-            "altered": false};
+            "altered": false,
+            "mode": null};
   },
 
   componentDidMount: function() {
@@ -17,11 +18,33 @@ var Root = React.createClass({
       }.bind(this),
       error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
     });
+
+  $.ajax("/api/v1/mode/", {
+      type: "GET",
+      success: function(data, status, req) {
+        console.log(data);
+        this.state.mode = data.mode;
+        this.setState(this.state);
+      }.bind(this),
+      error: function(xhr, status, err) {console.error("setpoint post error", status, err.toString());}
+    });
+
   },
   handleSetpointChange: function(hour, newSetpoint) {
     this.state.setpoints[hour] = newSetpoint;
     this.state.altered = true;
     this.setState(this.state);
+  },
+
+  handleThermostatMode: function(mode) {
+    $.ajax("/api/v1/mode/", {
+      type: "POST",
+      data: {"mode": mode},
+      success: function (data, status, req) {
+        this.state.mode = data.mode;
+        this.setState(this.state);
+      }.bind(this)
+    });
   },
   /**
   * Sends ajax request to server to change temp setpoints
@@ -91,6 +114,11 @@ var Root = React.createClass({
     return (
     <div>
     <div className="row">
+          <div className="col-md-12 center-block" style={{padding: "10px"}}>
+            <CurrentTemp />
+          </div>
+    </div>
+    <div className="row">
       <div className="col-md-12">
         <div className="center-block"><h3>Turn AC on for:</h3></div>
       </div>
@@ -112,16 +140,40 @@ var Root = React.createClass({
     );
   },
   render: function() {
+    var controls;
+    if (this.state.mode === 'auto')
+        controls = this.setpointControls();
+    if (this.state.mode === 'manual')
+        controls = this.manualControls();
+    if (this.state.mode === 'off')
+       controls = (<p>Thermostat is off!</p>);
     return (
     <div>
     <h3 align="center">№ 5 @ 3262 W Main</h3>
-    {this.setpointControls()}
-
+    <ThermostatModeSelector mode={this.state.mode} handleThermostatMode={this.handleThermostatMode} />
+    {controls}
     </div>
     );
   }
 });
 
+var ThermostatModeSelector = React.createClass({
+  handleModeChange: function (elem) {
+    this.props.handleThermostatMode(elem.target.value);
+  },
+
+  render: function () {
+  return (
+    <div>
+    <select className="form-control" value={this.props.mode} onChange={this.handleModeChange}>
+      <option value="auto">Auto</option>
+      <option value="manual">Manual</option>
+      <option value="off">Off</option>
+    </select>
+    </div>
+  );
+  }
+});
 var ManualTimer = React.createClass({
   handleClick: function(e) {
     console.log(e);

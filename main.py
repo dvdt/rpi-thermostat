@@ -78,6 +78,21 @@ def handle_setpoints_request():
         setpoints = {hr: db.get(hr) for hr in TEMP_SETPOINT_HOURS}
         return flask.json.jsonify(setpoints)
 
+@app.route('/api/v1/status/', methods=('GET',))
+def return_relay_status():
+    return flask.json.jsonify({'ac_on': rpi_relay.ac_status()})
+
+@app.route('/api/v1/mode/', methods=('GET', 'POST'))
+def handle_thermostat_mode():
+    if request.method == 'GET':
+        return flask.json.jsonify({'mode': state.CURRENT_MODE})
+
+    if request.method == 'POST':
+        mode = request.form.get('mode')
+        assert mode in [state.ThermostatModes.AUTO, state.ThermostatModes.MANUAL, state.ThermostatModes.OFF]
+        state.CURRENT_MODE = mode
+        return flask.json.jsonify({'mode': state.CURRENT_MODE})
+
 @app.route('/api/v1/temperature/', methods=('POST', 'GET'))
 def handle_temp():
     logger.info('in temperature')
@@ -99,7 +114,7 @@ def handle_temp():
 
 @app.route('/api/v1/timer/', methods=('POST', 'GET'))
 def handle_timer_request():
-    'manual override for turning the AC on for a set amount of time.'
+    """manual override for turning the AC on for a set amount of time."""
     def get_manual_status():
         if state.EVENT_QUEUE.queue:
             now = time.time()
@@ -111,7 +126,7 @@ def handle_timer_request():
         return flask.json.jsonify({})
 
     def handle_timer(on_time):
-        if (on_time < rpi_relay.MIN_ON_TIME) or (on_time > rpi_relay.MAX_ON_TIME):
+        if (on_time < conf.MIN_ON_TIME) or (on_time > conf.MAX_ON_TIME):
             raise werkzeug.exceptions.BadRequest(description='time_on exceeds valid params')
         turn_off_event = (time.time() + on_time, False)
         turn_on_event = (time.time(), True)
@@ -151,6 +166,9 @@ def bangbang_controller():
             return True
         return False
 
+    if state != state.ThermostatModes.AUTO:
+        return
+
     logger = logging.getLogger('bangbang_controller')
 
     conn = state.get_conn()
@@ -165,19 +183,16 @@ def bangbang_controller():
     now = datetime.datetime.now()
     current_setpoint = get_setpoint(now.hour, db=conn)
 
-    if state.CURRENT_MODE == state.ThermostatModes.AUTO:
-        if (most_recent_temp - current_setpoint) > (conf.HYSTERESIS_TEMP / 2.0):
-            turn_on_event = (time.time(), True)
-            state.EVENT_QUEUE.put(turn_on_event)
-            if rpi_relay.ac_status() is False:
-                logger.warn('Temp=%s, setpoint=%s, Setting AC ON' % (most_recent_temp, current_setpoint))
-        elif (current_setpoint - most_recent_temp) > (conf.HYSTERESIS_TEMP / 2.0):
-            turn_off_event = (time.time(), False)
-            state.EVENT_QUEUE.put(turn_off_event)
-            if rpi_relay.ac_status() is True:
-                logger.warn('Temp=%s, setpoint=%s, Setting AC OFF' % (most_recent_temp, current_setpoint))
-    else:
-        logger.warn('temperature controller is OFF. set mode to AUTO to turn on')
+    if (most_recent_temp - current_setpoint) > (conf.HYSTERESIS_TEMP / 2.0):
+        turn_on_event = (time.time(), True)
+        state.EVENT_QUEUE.put(turn_on_event)
+        if rpi_relay.ac_status() is False:
+            logger.warn('Temp=%s, setpoint=%s, Setting AC ON' % (most_recent_temp, current_setpoint))
+    elif (current_setpoint - most_recent_temp) > (conf.HYSTERESIS_TEMP / 2.0):
+        turn_off_event = (time.time(), False)
+        state.EVENT_QUEUE.put(turn_off_event)
+        if rpi_relay.ac_status() is True:
+            logger.warn('Temp=%s, setpoint=%s, Setting AC OFF' % (most_recent_temp, current_setpoint))
 
 @app.route('/<path:path>/')
 def resources(path):
@@ -196,8 +211,8 @@ if __name__ == '__main__':
     scheduler = BackgroundScheduler()
     scheduler.start()
 
-    scheduler.add_job(event_handler, 'interval', seconds=60)
-    scheduler.add_job(bangbang_controller, 'interval', seconds=120)
+    scheduler.add_job(event_handler, 'interval', seconds=conf.EVENT_LOOP_INTERVAL)
+    scheduler.add_job(bangbang_controller, 'interval', seconds=conf.BANGBANG_LOOP_INTERVAL)
     logger.warn('starting scheduler')
     logger.warn('starting web server')
     app.run(debug=False, host='0.0.0.0')

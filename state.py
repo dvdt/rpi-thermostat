@@ -4,8 +4,9 @@ import Queue
 import conf
 
 class ThermostatModes():
-    AUTO = 0
-    MANUAL = 1
+    AUTO = 'auto'
+    MANUAL = 'manual'
+    OFF = 'off'
 
 def get_ro_conn():
     return sqlite3dbm.sshelve.open(conf.SETPOINT_DB, 'r')

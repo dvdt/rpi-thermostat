@@ -8,11 +8,11 @@ rsync -av --exclude='venv' --exclude='.git' --exclude='.idea' . pi@192.168.1.12:
 # ssh pi@192.168.1.214 'cd ~/rpi-thermostat && source venv/bin/activate && pip install -r requirements.txt'
 # ssh pi@192.168.1.12 'cd ~/rpi-thermostat && source venv/bin/activate && pip install -r requirements.txt'
 
-ssh pi@192.168.1.214  'sudo cp /home/pi/rpi-thermostat/rpi-thermostat.conf /etc/supervisor/conf.d/'
+ssh pi@192.168.1.214 'sudo cp /home/pi/rpi-thermostat/rpi-thermostat.conf /etc/supervisor/conf.d/'
 ssh pi@192.168.1.214 'sudo supervisorctl reload'
 ssh pi@192.168.1.214 'sudo supervisorctl restart thermostat'
 
-ssh pi@192.168.1.12  'sudo cp /home/pi/rpi-thermostat/temp_logger.conf /etc/supervisor/conf.d/'
+ssh pi@192.168.1.12 'sudo cp /home/pi/rpi-thermostat/temp_logger.conf /etc/supervisor/conf.d/'
 ssh pi@192.168.1.12 'sudo supervisorctl reload'
 ssh pi@192.168.1.12 'sudo supervisorctl restart temp_logger'
 

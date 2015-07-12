@@ -9,7 +9,8 @@ Install
 sudo apt-get install python-pip
 sudo apt-get install supervisor
 sudo pip install virtualenv
-virtualenv venv
+sudo apt-get install python-rpi.gpio python3-rpi.gpio
+virtualenv --system-site-packages venv
 source ./venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -53,5 +54,3 @@ python main.py
 ```
 
 and then open [localhost:5000](localhost:5000) in a web browser.
-
-
