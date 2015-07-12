@@ -166,10 +166,12 @@ def bangbang_controller():
             return True
         return False
 
-    if state != state.ThermostatModes.AUTO:
+    logger = logging.getLogger('bangbang_controller')
+
+    if state.CURRENT_MODE != state.ThermostatModes.AUTO:
+        logger.warn("mode is set to %s" % state.CURRENT_MODE)
         return
 
-    logger = logging.getLogger('bangbang_controller')
 
     conn = state.get_conn()
     temp_read_time, most_recent_temp = state.TEMPERATURE_READINGS[-1]

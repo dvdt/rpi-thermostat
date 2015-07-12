@@ -1,5 +1,7 @@
 # Raspberry Pi Home Thermostat
 
+See the blog post for build pics: [BUILDING A RASPBERRY PI HOME THERMOSTAT](http://davetsao.com/blog/2015-07-11-raspberry-pi-thermostat.html).
+
 Install
 ---
 
@@ -32,16 +34,14 @@ sudo apt-get install build-essential python-dev
 cd Adafruit_Python_DHT && sudo python setup.py install
 ```
 
-
+Configure
+---
+Edit `conf.py` and the global vars in temp_logger.py, especially THERMOSTAT_URI.
 
 Deploy
 ---
 ```
 ./deploy
-# in rpi
-sudo supervisorctl reread
-sudo supervisorctl restart thermostat
-sudo supervisorctl restart temp_logger
 
 # should be running now!
 ```

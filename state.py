@@ -25,4 +25,5 @@ MOST_RECENT_OFF_KEY = 'most_recent_off'
 # accesses the unix epoch for when the AC relay was last switched ON
 MOST_RECENT_ON_KEY = 'most_recent_on'
 
+# Mode is initialized to AUTO.
 CURRENT_MODE = ThermostatModes.AUTO
