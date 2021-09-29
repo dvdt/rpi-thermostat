@@ -1,11 +1,10 @@
 from collections import defaultdict
 import logging
 import time
-from state import MOST_RECENT_ON_KEY, MOST_RECENT_OFF_KEY
 import conf
 try:
     import RPi.GPIO as GPIO
-except ImportError, e:
+except ImportError as e:
     # logging.warn("unable to find RPi.GPIO!!")
     class GPIOMock():
         BOARD = None
@@ -30,49 +29,48 @@ except ImportError, e:
     GPIO = GPIOMock()
 
 
-def can_turn_on(current_epoch_time, db):
-    last_off_epoch = db.get(MOST_RECENT_OFF_KEY)
-    logging.debug(last_off_epoch)
-    if (last_off_epoch is None) or (current_epoch_time - last_off_epoch) > conf.MIN_OFF_TIME:
+def _can_turn(db, current_epoch_time, recent_key, min_time, status):
+    # 20210922 PSE: combined _can_turn_on and _can_turn_off into single function to avoid code duplication
+    # 20210922 PSE: added function definition
+    "Returns boolean whether the device can be turned on or off"
+    last_epoch = db.get(recent_key)
+    if (last_epoch is None) or (current_epoch_time - last_epoch) > min_time:
         return True
-    else:
-        logging.warn('cannot turn on')
-    return False
-
-def can_turn_off(current_epoch_time, db):
-    last_on_epoch = db.get(MOST_RECENT_ON_KEY)
-    if (last_on_epoch is None) or (current_epoch_time - last_on_epoch) > conf.MIN_ON_TIME:
-        return True
-    else:
-        logging.warn('cannot turn off')
+    logging.warn(f'cannot turn {"on" if status else "off"}')
     return False
 
 def init_RPi():
+    # 20210922 PSE: added function definition
+    "Returns None: initializes RPi"
     GPIO.setmode(GPIO.BOARD)
     GPIO.setup(conf.AC_RELAY_PIN, GPIO.OUT)
 
-# Low level controls
-def _set_ac_on(db):
-    "Turns relay to high, turning on the AC"
-    if can_turn_on(time.time(), db):
-        GPIO.output(conf.AC_RELAY_PIN, True)
-        db[MOST_RECENT_ON_KEY] = time.time()
-        logging.warn("turned AC on")
-
-def _set_ac_off(db):
-    "Turns relay to low, turning off the AC"
-    if can_turn_off(time.time(), db):
-        GPIO.output(conf.AC_RELAY_PIN, False)
-        db[MOST_RECENT_OFF_KEY] = time.time()
-        logging.warn("turned AC off")
+def _set_ac(db, status):
+    # 20210922 PSE: combined set_ac_on and set_ac_off into single function to avoid code duplication
+    # 20210922 PSE: added function definition
+    "Returns None: turns the AC on or off, depending on ac_relay"
+    if status:
+        recent_key = conf.MOST_RECENT_OFF_KEY
+        min_time = conf.MIN_OFF_TIME
+        set_key = conf.MOST_RECENT_ON_KEY
+    else:
+        recent_key = conf.MOST_RECENT_ON_KEY
+        min_time = conf.MIN_ON_TIME
+        set_key = conf.MOST_RECENT_OFF_KEY
+    if _can_turn(db, time.time(), recent_key, min_time, status):
+        GPIO.output(conf.AC_RELAY_PIN, status)
+        db[set_key] = time.time()
+        logging.warn(f'turned AC {"on" if status else "off"}')
 
 def set_ac_relay(status, conn):
-    if bool(status) is True:
-        _set_ac_on(conn)
-    elif bool(status) is False:
-        _set_ac_off(conn)
+    # 20210922 PSE: added function definition
+    "Returns None: sets ac relay based on status"
+    if isinstance(bool(status), bool):
+        _set_ac(conn, bool(status))
     else:
         raise ValueError("invalid status")
 
 def ac_status():
+    # 20210922 PSE: added function definition
+    "Returns bool AC_RELAY_PIN status"
     return bool(GPIO.input(conf.AC_RELAY_PIN))

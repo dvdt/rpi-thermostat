@@ -36,7 +36,7 @@ cd Adafruit_Python_DHT && sudo python setup.py install
 
 Configure
 ---
-Edit `conf.py` and the global vars in temp_logger.py, especially THERMOSTAT_URI.
+Edit `conf.py`.
 
 Deploy
 ---
