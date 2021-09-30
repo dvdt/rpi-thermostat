@@ -1,6 +1,7 @@
+#20210922 PSE: reordered imports per PEP-8 guidelines (https://www.python.org/dev/peps/pep-0008/#imports)
 import collections
+import queue
 import sqlite3dbm
-import Queue
 import conf
 
 class ThermostatModes():
@@ -8,22 +9,17 @@ class ThermostatModes():
     MANUAL = 'manual'
     OFF = 'off'
 
-def get_ro_conn():
-    return sqlite3dbm.sshelve.open(conf.SETPOINT_DB, 'r')
+#20210922 PSE: removed vestigial function get_ro_conn()
 
 def get_conn():
+    #20210922 PSE: added function definition docstring
+    "Returns a sql database connection"
     return sqlite3dbm.sshelve.open(conf.SETPOINT_DB)
 
-STALE_READ_INTERVAL = 5 * 60 # in seconds
 
-EVENT_QUEUE = Queue.PriorityQueue()
+EVENT_QUEUE = queue.PriorityQueue()
 TEMPERATURE_READINGS = collections.deque(maxlen=1 * 24 * 60)
 HUMIDITY_READINGS = collections.deque(maxlen=1 * 24 * 60)
-# accesses the unix epoch for when the AC relay was last switched OFF
-MOST_RECENT_OFF_KEY = 'most_recent_off'
-
-# accesses the unix epoch for when the AC relay was last switched ON
-MOST_RECENT_ON_KEY = 'most_recent_on'
 
 # Mode is initialized to AUTO.
 CURRENT_MODE = ThermostatModes.AUTO
